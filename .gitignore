@@ -1,4 +1,6 @@
 
 node_modules/
+exported_chats/
+exported_chats.zip
 .DS_Store
 export.json

@@ -3,12 +3,50 @@ const tinder = require('tinder')
 const util = require('util')
 const prompt = require('prompt')
 const fs = require('fs-extra')
-
-const file = './export.json'
+const path = require('path')
+const stringify = require('csv-stringify')
+const moment = require('moment')
+const zipFolder = require('zip-folder')
 
 const client = new tinder.TinderClient()
 
-const getUserHistory = (fbAuthToken, fbId) => {
+const writeChat = (data, yourName) => {
+  const { matches } = data
+  for (var i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const exportLineData = [];
+    const { created_date, message_count, messages, participants, person } = match;
+    const _id = participants[0];
+    const { birth_date, name } = person;
+    const birth = moment(birth_date);
+    const matchDate = moment(created_date);
+    const ageAtMatch = birth.to(matchDate, true)
+
+    for (var a = 0; a < messages.length; a++) {
+      const msg = messages[a];
+      const { from, message, sent_date, to } = msg;
+      const messageName = from === _id ? `${name} ${ageAtMatch}` : yourName;
+      exportLineData.push([sent_date, messageName, message]);
+    }
+
+    const OUTPUT_CSV = path.join(__dirname + `/exported_chats/${yourName}/${name}_${_id}.csv`);
+    stringify(exportLineData, function(err, output){
+      fs.outputFileSync(OUTPUT_CSV, output);
+    });
+  }
+  setTimeout(() => {
+    zipFolder(__dirname + `/exported_chats`, __dirname + '/exported_chats.zip', function(err) {
+      if(err) {
+          console.log('oh no!', err);
+      } else {
+          console.log('EXCELLENT');
+      }
+    });
+  }, 2000)
+}
+
+
+const getUserHistory = (fbAuthToken, fbId, yourName) => {
   client.authorize(
     fbAuthToken,
     fbId,
@@ -18,21 +56,14 @@ const getUserHistory = (fbAuthToken, fbId) => {
           console.log('error', error)
         }
         console.log(util.inspect(data, {showHidden: false, depth: null}));
-        fs.outputFile(file, JSON.stringify(data), err => {
-          console.log(err) // => null
-
-          fs.readFile(file, 'utf8', (err, data) => {
-            if (err) return console.error(err)
-            console.log(data) // => hello!
-          })
-        })
+        writeChat(data, yourName)
       });
     }
   );
 }
 
-prompt.get(['fbAuthToken', 'fbId'], function (err, result) {
-  const { fbAuthToken, fbId } = result
-  getUserHistory(fbAuthToken, fbId)
-  });
+prompt.get(['fbAuthToken', 'fbId', 'yourName'], function (err, result) {
+  const { fbAuthToken, fbId, yourName } = result
+  getUserHistory(fbAuthToken, fbId, yourName)
+});
 

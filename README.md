@@ -37,6 +37,8 @@ npm install
 node tinpull.js
 ```
 
-* Follow the prompts by pasting and entering the Facebook Auth Token and ID
-* The script will output a file called "export.json" in the same directory.
-* Send it over
+* Follow the prompts by pasting and entering the Facebook Auth Token, Facebook ID, and name
+* The script will output a folder with all your chats in CSV format and also in a zip format (easy to send)
+* Send over the zip.
+
+![files](step6.png)
